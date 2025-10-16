@@ -1,44 +1,50 @@
+
 import { StripePlan } from '../interfaces/stripe-plan.interface';
 
 export const STRIPE_PLANS: StripePlan[] = [
   {
-    id: 'price_1_monthly', // This will be the actual Stripe price ID
-    name: 'Basic Plan',
-    description: 'Basic monthly plan',
-    amount: 12900, // cents ($129)
+    id: 'price_starter_monthly',
+    name: 'Starter',
+    description: '30,000 words/month, 750 words/request',
+    amount: 1200, // cents ($12)
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
-    metadata: {},
-    productId: 'prod_basic',
+    metadata: {
+      wordsPerMonth: '30000',
+      wordsPerRequest: '750',
+      features: 'Advanced Humanization Engine, Generate Human-like Text, Plagiarism-Free Content, Built-in AI Detector, Quality and Error-Free, 80+ Languages Supported, ChatGPT Watermark Removal',
+    },
+    productId: 'prod_starter',
   },
   {
-    id: 'price_2_monthly',
-    name: 'Pro Plan',
-    description: 'Pro monthly plan with advanced features',
-    amount: 19900, // cents
+    id: 'price_pro_monthly',
+    name: 'Pro',
+    description: '70,000 words/month, 1,500 words/request',
+    amount: 2300, // cents ($23)
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
-    metadata: {},
+    metadata: {
+      wordsPerMonth: '70000',
+      wordsPerRequest: '1500',
+      features: 'Advanced Humanization Engine, Generate Human-like Text, Plagiarism-Free Content, Built-in AI Detector, Quality and Error-Free, 80+ Languages Supported, ChatGPT Watermark Removal',
+    },
     productId: 'prod_pro',
   },
   {
-    id: 'price_3_onetime',
-    name: '1000 Credits',
-    description: '1000 credits one-time purchase',
-    amount: 39900,
+    id: 'price_unlimited_monthly',
+    name: 'Unlimited',
+    description: 'Unlimited words/month, 2,000 words/request',
+    amount: 4700, // cents ($47)
     currency: 'usd',
-    metadata: {},
-    productId: 'prod_credits_1000',
-  },
-  {
-    id: 'price_4_onetime',
-    name: '2500 Credits',
-    description: '2500 credits one-time purchase',
-    amount: 79900,
-    currency: 'usd',
-    metadata: {},
-    productId: 'prod_credits_2500',
+    interval: 'month',
+    intervalCount: 1,
+    metadata: {
+      wordsPerMonth: 'unlimited',
+      wordsPerRequest: '2000',
+      features: 'Advanced Humanization Engine, Generate Human-like Text, Plagiarism-Free Content, Built-in AI Detector, Quality and Error-Free, 80+ Languages Supported, ChatGPT Watermark Removal',
+    },
+    productId: 'prod_unlimited',
   },
 ];
