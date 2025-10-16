@@ -1,0 +1,124 @@
+NODE_ENV=development
+APP_PORT=3000
+APP_NAME="NestJS API"
+API_PREFIX=api
+APP_FALLBACK_LANGUAGE=en
+APP_HEADER_LANGUAGE=x-custom-lang
+FRONTEND_DOMAIN=http://localhost:3000
+BACKEND_DOMAIN=http://localhost:3000
+
+DATABASE_TYPE=postgres
+DATABASE_HOST=postgres
+DATABASE_PORT=5432
+DATABASE_USERNAME=root
+DATABASE_PASSWORD=secret
+DATABASE_NAME=api
+DATABASE_SYNCHRONIZE=false
+DATABASE_MAX_CONNECTIONS=100
+DATABASE_SSL_ENABLED=false
+DATABASE_REJECT_UNAUTHORIZED=false
+DATABASE_CA=
+DATABASE_KEY=
+DATABASE_CERT=
+DATABASE_URL=
+
+# Support "local", "s3", "s3-presigned"
+FILE_DRIVER=local
+ACCESS_KEY_ID=
+SECRET_ACCESS_KEY=
+AWS_S3_REGION=
+AWS_DEFAULT_S3_BUCKET=
+
+MAIL_HOST=maildev
+MAIL_PORT=1025
+MAIL_USER=
+MAIL_PASSWORD=
+MAIL_IGNORE_TLS=true
+MAIL_SECURE=false
+MAIL_REQUIRE_TLS=false
+MAIL_DEFAULT_EMAIL=noreply@example.com
+MAIL_DEFAULT_NAME=Api
+MAIL_CLIENT_PORT=1080
+
+AUTH_JWT_SECRET=secret
+AUTH_JWT_TOKEN_EXPIRES_IN=15m
+AUTH_REFRESH_SECRET=secret_for_refresh
+AUTH_REFRESH_TOKEN_EXPIRES_IN=3650d
+AUTH_FORGOT_SECRET=secret_for_forgot
+AUTH_FORGOT_TOKEN_EXPIRES_IN=30m
+AUTH_CONFIRM_EMAIL_SECRET=secret_for_confirm_email
+AUTH_CONFIRM_EMAIL_TOKEN_EXPIRES_IN=1d
+
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+APPLE_APP_AUDIENCE=[]
+
+WORKER_HOST=redis://redis:6379/1
+
+# ==============================================================================
+# STRIPE PAYMENT CONFIGURATION
+# ==============================================================================
+
+# Stripe API Keys (Required for payment processing)
+# Get these from your Stripe Dashboard: https://dashboard.stripe.com/apikeys
+STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+
+# Stripe API Version
+# Recommended to use a specific version for consistency
+STRIPE_API_VERSION=2024-06-20
+
+# Webhook Configuration
+# Generate webhook endpoint secret from Stripe Dashboard
+# Required for secure webhook processing
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# Webhook endpoint URL for automatic setup
+# Replace with your actual domain in production
+WEBHOOK_ENDPOINT_URL=https://yourdomain.com/api/stripe/webhook
+
+# Enable/disable webhook event logging to database
+# Set to "true" to save all webhook events to database for debugging/auditing
+# Set to "false" to disable database logging (only console logs)
+STRIPE_WEBHOOK_LOGGING_ENABLED=false
+
+# Payments Module Configuration
+# Options: "none", "single", "subscription", "both"
+# - none: Disable all payments
+# - single: Only one-time payments
+# - subscription: Only subscription payments  
+# - both: Enable both payment types
+PAYMENTS_MODE=both
+
+# ==============================================================================
+# STRIPE RETRY CONFIGURATION
+# ==============================================================================
+
+# Maximum number of payment retry attempts before taking action
+STRIPE_MAX_RETRY_ATTEMPTS=3
+
+# Action to take when max retries are exceeded: log, cancel, notify, custom
+STRIPE_RETRY_ACTION=log
+
+# ==============================================================================
+# STRIPE PLANS CONFIGURATION (Optional)
+# ==============================================================================
+
+# These are generated automatically by the setupStripe.ts script
+# You can also create them manually in Stripe Dashboard
+STRIPE_PRICE_BASIC_PLAN=price_basic_plan_id
+STRIPE_PRICE_PRO_PLAN=price_pro_plan_id
+STRIPE_PRICE_1000_CREDITS=price_credits_1000_id
+STRIPE_PRICE_2500_CREDITS=price_credits_2500_id
+
+# ==============================================================================
+# DEVELOPMENT CONFIGURATION
+# ==============================================================================
+
+# For local testing with Stripe CLI
+# Use 'stripe listen --forward-to localhost:3000/api/stripe/webhook'
+# STRIPE_WEBHOOK_SECRET=whsec_test_local_secret_from_stripe_cli
