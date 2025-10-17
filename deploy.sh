@@ -11,11 +11,10 @@ echo "Instalando dependencias npm si es necesario..."
 npm install
 
 echo "Reconstruyendo y levantando servicios con Docker Compose..."
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 
 echo "Ejecutando migraciones..."
-docker-compose exec api npm run migration:run
-
+docker compose exec api npm run migration:run
 
 echo "Despliegue completado correctamente."
