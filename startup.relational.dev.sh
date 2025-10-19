@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-/opt/wait-for-it.sh retone-dev-db-api.cluster-cjc2wcmgg4jb.us-east-2.rds.amazonaws.com:5432
+/opt/wait-for-it.sh ${DATABASE_HOST}:${DATABASE_PORT}
 npm run migration:run
 npm run seed:run:relational
 npm run start:prod
