@@ -39,6 +39,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - ${APP_PORT}:${APP_PORT}
-
+    env_file:
+      - .env
+      
 volumes:
   boilerplate-db:
