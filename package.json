@@ -23,6 +23,8 @@
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "docker:local": "docker compose -f docker-compose.local.yaml up --build",
+    "docker:dev": "docker compose up --build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:swc": "nest start -b swc -w",
