@@ -42,6 +42,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.864.0",
     "@aws-sdk/s3-request-presigner": "3.864.0",
+    "@nestjs/bull": "^11.0.4",
     "@nestjs/common": "11.1.6",
     "@nestjs/config": "4.0.2",
     "@nestjs/core": "11.1.6",
@@ -52,6 +53,7 @@
     "@nestjs/typeorm": "11.0.0",
     "@types/multer-s3": "3.0.3",
     "bcryptjs": "3.0.2",
+    "bull": "^4.16.5",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.2",
     "dotenv": "17.2.2",
@@ -62,6 +64,7 @@
     "multer-s3": "3.0.1",
     "nestjs-i18n": "10.5.1",
     "nodemailer": "7.0.6",
+    "openai": "^6.6.0",
     "passport": "0.7.0",
     "passport-anonymous": "1.0.1",
     "passport-jwt": "4.0.1",
