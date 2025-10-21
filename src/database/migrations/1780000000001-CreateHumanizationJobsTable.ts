@@ -16,11 +16,6 @@ export class CreateHumanizationJobsTable1780000000001 implements MigrationInterf
             type: 'varchar',
           },
           {
-            name: 'inputText',
-            type: 'text',
-            isNullable: true,
-          },
-          {
             name: 'inputFileUrl',
             type: 'varchar',
             isNullable: true,

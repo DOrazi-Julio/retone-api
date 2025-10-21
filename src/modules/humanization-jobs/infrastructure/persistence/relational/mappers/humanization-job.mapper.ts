@@ -6,7 +6,6 @@ export class HumanizationJobMapper {
     return new HumanizationJob(
       entity.id,
       entity.userId,
-      entity.inputText,
       entity.inputFileUrl,
       entity.outputFileUrl,
       entity.tokensUsed,
@@ -20,7 +19,6 @@ export class HumanizationJobMapper {
     const entity = new HumanizationJobEntity();
     entity.id = domain.id;
     entity.userId = domain.userId;
-    entity.inputText = domain.inputText;
     entity.inputFileUrl = domain.inputFileUrl;
     entity.outputFileUrl = domain.outputFileUrl;
     entity.tokensUsed = domain.tokensUsed;

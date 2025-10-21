@@ -9,9 +9,6 @@ export class HumanizationJobEntity {
   @Column()
   userId: string;
 
-  @Column({ type: 'text', nullable: true })
-  inputText?: string;
-
   @Column({ nullable: true })
   inputFileUrl?: string;
 

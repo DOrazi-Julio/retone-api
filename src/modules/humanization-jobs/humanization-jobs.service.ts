@@ -32,7 +32,6 @@ export class HumanizationJobsService {
     const job = await this.jobRepo.create({
       id: jobId,
       userId: dto.userId,
-      inputText: dto.inputText,
       inputFileUrl: inputFileId,
       status: 'pending',
     });
@@ -44,7 +43,6 @@ export class HumanizationJobsService {
     return {
       id: job.id,
       userId: job.userId,
-      inputText: job.inputText,
       inputFileUrl: job.inputFileUrl,
       outputFileUrl: job.outputFileUrl,
       tokensUsed: job.tokensUsed,

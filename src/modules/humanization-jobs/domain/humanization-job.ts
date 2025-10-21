@@ -4,7 +4,6 @@ export class HumanizationJob {
   constructor(
     public id: string,
     public userId: string,
-    public inputText?: string,
     public inputFileUrl?: string,
     public outputFileUrl?: string,
     public tokensUsed?: number,
