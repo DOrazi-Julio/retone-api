@@ -24,6 +24,7 @@ import { StripeModule } from './modules/stripe/stripe.module';
 import { HumanizationJobsModule } from './modules/humanization-jobs/humanization-jobs.module';
 import stripeConfig from './modules/stripe/config/stripe.config';
 import { BullModule } from '@nestjs/bull';
+import { HUMANIZATION_JOBS_QUEUE } from './modules/humanization-jobs/queue';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -86,6 +87,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
       },
       inject: [ConfigService],
     }),
+    BullModule.registerQueue({ name: HUMANIZATION_JOBS_QUEUE }),
     UsersModule,
     FilesModule,
     AuthModule,
