@@ -23,6 +23,7 @@ import { MailerModule } from './mailer/mailer.module';
 import { StripeModule } from './modules/stripe/stripe.module';
 import { HumanizationJobsModule } from './modules/humanization-jobs/humanization-jobs.module';
 import stripeConfig from './modules/stripe/config/stripe.config';
+import { BullModule } from '@nestjs/bull';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
@@ -69,6 +70,14 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
       ],
       imports: [ConfigModule],
       inject: [ConfigService],
+    }),
+    BullModule.forRoot({
+      redis: {
+        host: 'redis',       // nombre del servicio en docker-compose
+        port: 6379,          // puerto
+        db: 1,               // igual que antes: /1
+        // password: process.env.REDIS_PASSWORD, // solo si tu redis tiene contraseña
+      },
     }),
     UsersModule,
     FilesModule,
