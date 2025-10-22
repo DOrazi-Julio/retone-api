@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { CreateHumanizationJobDto } from './dto/create-humanization-job.dto';
 import { HumanizationJobDto } from './dto/humanization-job.dto';
 import { HumanizationJobRepository } from './infrastructure/persistence/relational/repositories/humanization-job.repository';
+import { HumanizationJobMapper } from './infrastructure/persistence/relational/mappers/humanization-job.mapper';
 import { CreditsService } from '../credits/credits.service';
 import { FilesService } from '../../files/files.service';
 import { InjectQueue } from '@nestjs/bull';
@@ -29,15 +30,18 @@ export class HumanizationJobsService {
     // 2. Create job record
     const jobId = uuidv4();
     const inputFileId = await this.filesService.uploadTextFile(`jobs/${jobId}/input.txt`, dto.inputText);
-    const job = await this.jobRepo.create({
+    const jobEntity = await this.jobRepo.create({
       id: jobId,
       userId: dto.userId,
       inputFileUrl: inputFileId,
       status: 'pending',
+      readability: dto.readability,
+      tone: dto.tone,
     });
+    const job = HumanizationJobMapper.toDomain(jobEntity);
 
     // 3. Enqueue job
-    await this.queue.add('process', { jobId });
+    await this.queue.add('process', { jobId, readability: dto.readability, tone: dto.tone });
 
     // 4. Return DTO
     return {
@@ -47,8 +51,8 @@ export class HumanizationJobsService {
       outputFileUrl: job.outputFileUrl,
       tokensUsed: job.tokensUsed,
       status: job.status,
-      createdAt: job.createdAt,
-      updatedAt: job.updatedAt,
+      createdAt: job.createdAt!,
+      updatedAt: job.updatedAt!,
     };
   }
 }

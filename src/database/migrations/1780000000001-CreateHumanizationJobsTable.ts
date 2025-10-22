@@ -35,6 +35,16 @@ export class CreateHumanizationJobsTable1780000000001 implements MigrationInterf
             type: 'varchar',
           },
           {
+            name: 'readability',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
+            name: 'tone',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
             name: 'createdAt',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',

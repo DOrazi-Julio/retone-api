@@ -10,5 +10,7 @@ export class HumanizationJob {
     public status: HumanizationJobStatus = 'pending',
     public createdAt?: Date,
     public updatedAt?: Date,
+    public readability?: string,
+    public tone?: string,
   ) {}
 }

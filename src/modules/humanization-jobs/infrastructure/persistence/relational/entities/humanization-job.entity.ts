@@ -21,6 +21,12 @@ export class HumanizationJobEntity {
   @Column({ type: 'varchar', length: 16 })
   status: HumanizationJobStatus;
 
+  @Column({ nullable: true })
+  readability?: string;
+
+  @Column({ nullable: true })
+  tone?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

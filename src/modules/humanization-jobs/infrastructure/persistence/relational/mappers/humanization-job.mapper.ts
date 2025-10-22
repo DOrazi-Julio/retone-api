@@ -12,6 +12,8 @@ export class HumanizationJobMapper {
       entity.status,
       entity.createdAt,
       entity.updatedAt,
+      entity.readability,
+      entity.tone,
     );
   }
 
@@ -23,8 +25,8 @@ export class HumanizationJobMapper {
     entity.outputFileUrl = domain.outputFileUrl;
     entity.tokensUsed = domain.tokensUsed;
     entity.status = domain.status;
-  if (domain.createdAt) entity.createdAt = domain.createdAt;
-  if (domain.updatedAt) entity.updatedAt = domain.updatedAt;
+    entity.readability = domain.readability;
+    entity.tone = domain.tone;
     return entity;
   }
 }

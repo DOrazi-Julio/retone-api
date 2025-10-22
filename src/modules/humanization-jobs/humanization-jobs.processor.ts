@@ -15,8 +15,8 @@ export class HumanizationJobsProcessor {
   ) {}
 
   @Process('process')
-  async handleProcess(job: Job<{ jobId: string }>) {
-    const { jobId } = job.data;
+  async handleProcess(job: Job<{ jobId: string; readability?: string; tone?: string }>) {
+    const { jobId, readability, tone } = job.data;
     const jobEntity = await this.jobRepo.findById(jobId);
     if (!jobEntity) return;
     try {
@@ -25,10 +25,17 @@ export class HumanizationJobsProcessor {
   const inputText = await this.filesService.downloadFileAsText(jobEntity.inputFileUrl ?? '');
       // Call OpenAI
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      let systemPrompt = 'Humanize the following text.';
+      if (readability) {
+        systemPrompt += ` Make it suitable for ${readability} readability level.`;
+      }
+      if (tone) {
+        systemPrompt += ` Use a ${tone} tone.`;
+      }
       const response = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Humanize the following text.' },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: inputText },
         ],
       });

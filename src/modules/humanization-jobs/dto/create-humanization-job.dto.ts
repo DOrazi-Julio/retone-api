@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateHumanizationJobDto {
   @IsString()
@@ -8,4 +8,12 @@ export class CreateHumanizationJobDto {
   @IsString()
   @IsNotEmpty()
   inputText: string;
+
+  @IsOptional()
+  @IsString()
+  readability?: string;
+
+  @IsOptional()
+  @IsString()
+  tone?: string;
 }
