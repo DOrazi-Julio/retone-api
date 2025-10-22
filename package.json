@@ -26,6 +26,7 @@
     "docker:local": "docker compose -f docker-compose.local.yaml up --build",
     "docker:dev": "docker compose up --build",
     "start": "nest start",
+    "start:worker": "nest start worker",
     "start:dev": "nest start --watch",
     "start:swc": "nest start -b swc -w",
     "start:debug": "nest start --debug --watch",
