@@ -24,7 +24,7 @@ sleep 5
 echo "🧩 Ejecutando migraciones..."
 docker compose run --rm api npm run migration:run
 
-# 5️⃣ Limpiar contenedores temporales e imágenes huérfanas.
+# 5️⃣ Limpiar contenedores temporales e imágenes huérfanas
 echo "🧹 Limpiando recursos no utilizados..."
 docker system prune -f
 
