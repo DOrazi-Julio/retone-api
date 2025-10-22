@@ -47,7 +47,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: retone-api-worker
-    command: npm run start:worker   # <- Ejecuta las tareas
+    command: npm run start:worker:prod   # <- Ejecuta las tareas en modo producción usando dist/worker.js
     env_file:
       - .env
     depends_on:
