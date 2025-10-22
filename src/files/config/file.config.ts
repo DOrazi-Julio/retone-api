@@ -1,4 +1,8 @@
 import { registerAs } from '@nestjs/config';
+// Ensure .env is loaded when this module is imported (validation runs on import)
+// Some modules validate process.env at import-time, so load dotenv here as a fallback.
+import dotenv from 'dotenv';
+dotenv.config();
 
 import { IsEnum, IsString, ValidateIf } from 'class-validator';
 import validateConfig from '../../utils/validate-config';

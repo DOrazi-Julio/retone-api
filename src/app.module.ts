@@ -71,13 +71,20 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
     }),
-    BullModule.forRoot({
-      redis: {
-        host: 'redis',       // nombre del servicio en docker-compose
-        port: 6379,          // puerto
-        db: 1,               // igual que antes: /1
-        // password: process.env.REDIS_PASSWORD, // solo si tu redis tiene contraseña
+    BullModule.forRootAsync({
+      useFactory: (configService: ConfigService) => {
+        const url = configService.get<string>('REDIS_URL') || configService.get<string>('WORKER_HOST');
+        if (url) return { redis: { url } };
+        return {
+          redis: {
+            host: configService.get<string>('REDIS_HOST') || 'redis',
+            port: Number(configService.get<number>('REDIS_PORT') ?? 6379),
+            db: Number(configService.get<number>('REDIS_DB') ?? 1),
+            password: configService.get<string>('REDIS_PASSWORD') || undefined,
+          },
+        };
       },
+      inject: [ConfigService],
     }),
     UsersModule,
     FilesModule,
