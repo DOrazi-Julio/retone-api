@@ -1,22 +1,33 @@
-#!/usr/bin/env bash
-set -e
+#!/bin/bash
 
-cd "$(dirname "$0")"
+set -e  # Detiene la ejecución si ocurre algún error
 
-echo "Actualizando código desde el repositorio..."
-git pull origin main
+echo "======================================="
+echo "🚀 Iniciando proceso de despliegue..."
+echo "======================================="
 
-echo "Instalando dependencias npm si es necesario..."
-npm install
+# 1️⃣ Actualizar código desde el repositorio
+echo "📦 Actualizando código desde GitHub..."
+git fetch origin main
+git reset --hard origin/main
 
-echo "Reconstruyendo y levantando servicios con Docker Compose..."
+# 2️⃣ Reconstruir e iniciar los contenedores
+echo "🐳 Construyendo e iniciando contenedores..."
 docker compose down
 docker compose up -d --build
 
-echo "Esperando a que la base de datos esté lista..."
+# 3️⃣ Esperar a que la base de datos esté lista
+echo "⏳ Esperando a que la base de datos esté lista..."
 sleep 5
 
-echo "Ejecutando migraciones..."
+# 4️⃣ Ejecutar migraciones con un contenedor temporal
+echo "🧩 Ejecutando migraciones..."
 docker compose run --rm api npm run migration:run
 
-echo "Despliegue completado correctamente."
+# 5️⃣ Limpiar contenedores temporales e imágenes huérfanas
+echo "🧹 Limpiando recursos no utilizados..."
+docker system prune -f
+
+echo "======================================="
+echo "✅ Despliegue completado con éxito!"
+echo "======================================="
