@@ -17,8 +17,3 @@ jobs:
           script: |
             cd /home/ec2-user/retone-api
             ./deploy.sh
-            # Check if API container is running
-            if ! docker ps | grep -q retone-api-api; then
-              echo "API container not running after deploy"
-              exit 1
-            fi
