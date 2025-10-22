@@ -1,46 +1,87 @@
+version: "3.9"
+
 services:
+  # ---------------------------------------------
+  # PostgreSQL (opcional, descomentá si lo necesitás)
+  # ---------------------------------------------
   # postgres:
   #   image: postgres:17.6-alpine
+  #   container_name: postgres
   #   ports:
-  #     - ${DATABASE_PORT}:5432
+  #     - "${DATABASE_PORT}:5432"
   #   volumes:
   #     - boilerplate-db:/var/lib/postgresql/data
   #   environment:
   #     POSTGRES_USER: ${DATABASE_USERNAME}
   #     POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
   #     POSTGRES_DB: ${DATABASE_NAME}
+  #   restart: always
 
-  # maildev:
-  #   build:
-  #     context: .
-  #     dockerfile: maildev.Dockerfile
-  #   ports:
-  #     - ${MAIL_CLIENT_PORT}:1080
-  #     - ${MAIL_PORT}:1025
-
+  # ---------------------------------------------
+  # Adminer para gestionar Postgres
+  # ---------------------------------------------
   adminer:
     image: adminer
     container_name: adminer
     restart: always
     ports:
-      - "8080:8080"  # Podés cambiar el puerto si ya está ocupado
+      - "8080:8080"
     environment:
-      ADMINER_DEFAULT_DB_DRIVER: pgsql  # Para PostgreSQL
+      ADMINER_DEFAULT_DB_DRIVER: pgsql
 
-  # Uncomment to use redis
+  # ---------------------------------------------
+  # Redis
+  # ---------------------------------------------
   redis:
     image: redis:7-alpine
+    container_name: retone-api-redis
     ports:
-      - 6379:6379
+      - "6379:6379"
+    restart: always
 
+  # ---------------------------------------------
+  # API principal
+  # ---------------------------------------------
   api:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: retone-api-api
     ports:
-      - ${APP_PORT}:${APP_PORT}
+      - "${APP_PORT}:${APP_PORT}"
     env_file:
       - .env
-      
+    depends_on:
+      - redis
+    restart: always
+
+  # ---------------------------------------------
+  # Worker de colas
+  # ---------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: retone-api-worker
+    command: npm run worker
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: always
+
+  # ---------------------------------------------
+  # Maildev (opcional, descomentá si lo necesitás)
+  # ---------------------------------------------
+  # maildev:
+  #   build:
+  #     context: .
+  #     dockerfile: maildev.Dockerfile
+  #   container_name: maildev
+  #   ports:
+  #     - "${MAIL_CLIENT_PORT}:1080"
+  #     - "${MAIL_PORT}:1025"
+  #   restart: always
+
 volumes:
   boilerplate-db:
