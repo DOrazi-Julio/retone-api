@@ -18,18 +18,27 @@ export class HumanizationJobsService {
     private readonly jobRepo: HumanizationJobRepository,
     private readonly creditsService: CreditsService,
     private readonly filesService: FilesService,
-  @InjectQueue(HUMANIZATION_JOBS_QUEUE) private readonly queue: Queue,
+    @InjectQueue(HUMANIZATION_JOBS_QUEUE) private readonly queue: Queue,
   ) {}
 
   async createJob(dto: CreateHumanizationJobDto): Promise<HumanizationJobDto> {
     // 1. Check credits
-    const hasCredits = await this.creditsService.hasSufficientCredits(dto.userId, HUMANIZATION_CREDIT_COST);
+    const hasCredits = await this.creditsService.hasSufficientCredits(
+      dto.userId,
+      HUMANIZATION_CREDIT_COST,
+    );
     if (!hasCredits) throw new BadRequestException('Insufficient credits');
-    await this.creditsService.deductCredits(dto.userId, HUMANIZATION_CREDIT_COST);
+    await this.creditsService.deductCredits(
+      dto.userId,
+      HUMANIZATION_CREDIT_COST,
+    );
 
     // 2. Create job record
     const jobId = uuidv4();
-    const inputFileId = await this.filesService.uploadTextFile(`jobs/${jobId}/input.txt`, dto.inputText);
+    const inputFileId = await this.filesService.uploadTextFile(
+      `jobs/${jobId}/input.txt`,
+      dto.inputText,
+    );
     const jobEntity = await this.jobRepo.create({
       id: jobId,
       userId: dto.userId,
@@ -41,7 +50,13 @@ export class HumanizationJobsService {
     const job = HumanizationJobMapper.toDomain(jobEntity);
 
     // 3. Enqueue job
-    await this.queue.add('process', { jobId, readability: dto.readability, tone: dto.tone });
+    console.log('Adding job to queue', HUMANIZATION_JOBS_QUEUE, { jobId });
+    await this.queue.add('process', {
+      jobId,
+      readability: dto.readability,
+      tone: dto.tone,
+    });
+    console.log('Job added');
 
     // 4. Return DTO
     return {
