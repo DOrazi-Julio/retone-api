@@ -21,6 +21,7 @@ import { AllConfigType } from './config/config.type';
 import { SessionModule } from './session/session.module';
 import { MailerModule } from './mailer/mailer.module';
 import { StripeModule } from './modules/stripe/stripe.module';
+import { HumanizationJobsModule } from './modules/humanization-jobs/humanization-jobs.module';
 import stripeConfig from './modules/stripe/config/stripe.config';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
@@ -77,7 +78,8 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     MailModule,
     MailerModule,
     HomeModule,
-    StripeModule,
+  StripeModule,
+  HumanizationJobsModule,
   ],
 })
 export class AppModule {}
