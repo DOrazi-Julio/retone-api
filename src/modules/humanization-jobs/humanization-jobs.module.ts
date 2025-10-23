@@ -8,7 +8,7 @@ import { CreditsModule } from '../credits/credits.module';
 import { FilesModule } from '../../files/files.module';
 // HumanizationJobsProcessor must only be loaded in the worker application.
 // The API application should NOT include the processor as a provider, otherwise
-// it will process jobs itself and consume resources.
+// it will process jobs itself and consume resources
 
 @Module({
   imports: [
