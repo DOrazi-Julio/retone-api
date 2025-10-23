@@ -73,18 +73,14 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
       inject: [ConfigService],
     }),
     BullModule.forRootAsync({
-      useFactory: (configService: ConfigService) => {
-        const url = configService.get<string>('REDIS_URL') || configService.get<string>('WORKER_HOST');
-        if (url) return { redis: { url } };
-        return {
-          redis: {
-            host: configService.get<string>('REDIS_HOST') || 'redis',
-            port: Number(configService.get<number>('REDIS_PORT') ?? 6379),
-            db: Number(configService.get<number>('REDIS_DB') ?? 1),
-            password: configService.get<string>('REDIS_PASSWORD') || undefined,
-          },
-        };
-      },
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get('REDIS_HOST'),
+          port: Number(configService.get('REDIS_PORT')),
+          db: Number(configService.get('REDIS_DB') || 0),
+          password: configService.get('REDIS_PASSWORD') || undefined,
+        },
+      }),
       inject: [ConfigService],
     }),
     BullModule.registerQueue({ name: HUMANIZATION_JOBS_QUEUE }),
@@ -96,8 +92,8 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     MailModule,
     MailerModule,
     HomeModule,
-  StripeModule,
-  HumanizationJobsModule,
+    StripeModule,
+    HumanizationJobsModule,
   ],
 })
 export class AppModule {}

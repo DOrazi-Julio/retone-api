@@ -19,7 +19,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 
 @Module({
   imports: [
-  ConfigModule.forRoot({
+    ConfigModule.forRoot({
       isGlobal: true,
       load: [
         databaseConfig,
@@ -40,25 +40,20 @@ import { DataSource, DataSourceOptions } from 'typeorm';
       },
     }),
     BullModule.forRootAsync({
-      imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        ...(configService.get<string>('REDIS_URL') || configService.get<string>('WORKER_HOST')
-          ? { redis: { url: configService.get<string>('REDIS_URL') || configService.get<string>('WORKER_HOST') } }
-          : {
-              redis: {
-                host: configService.get('REDIS_HOST') || 'redis',
-                port: Number(configService.get('REDIS_PORT') || 6379),
-                db: Number(configService.get('REDIS_DB') || 1),
-                password: configService.get('REDIS_PASSWORD') || undefined,
-              },
-            }),
+        redis: {
+          host: configService.get('REDIS_HOST'),
+          port: Number(configService.get('REDIS_PORT')),
+          db: Number(configService.get('REDIS_DB') || 0),
+          password: configService.get('REDIS_PASSWORD') || undefined,
+        },
       }),
       inject: [ConfigService],
     }),
     BullModule.registerQueue({ name: HUMANIZATION_JOBS_QUEUE }),
-  HumanizationJobsRelationalPersistenceModule,
-  FilesModule,
-  HumanizationJobsModule,
+    HumanizationJobsRelationalPersistenceModule,
+    FilesModule,
+    HumanizationJobsModule,
   ],
   providers: [HumanizationJobsProcessor],
 })
