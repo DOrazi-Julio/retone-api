@@ -51,12 +51,15 @@ export class HumanizationJobsService {
 
     // 3. Enqueue job
     console.log('Adding job to queue', HUMANIZATION_JOBS_QUEUE, { jobId });
-    await this.queue.add('process', {
+   const queuqueResponse = await this.queue.add('process', {
       jobId,
       readability: dto.readability,
       tone: dto.tone,
     });
     console.log('Job added');
+
+    console.log('Created humanization job', queuqueResponse);
+    
 
     // 4. Return DTO
     return {
