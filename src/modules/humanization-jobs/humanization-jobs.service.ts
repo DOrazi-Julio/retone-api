@@ -1,4 +1,4 @@
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { CreateHumanizationJobDto } from './dto/create-humanization-job.dto';
 import { HumanizationJobDto } from './dto/humanization-job.dto';
 import { HumanizationJobRepository } from './infrastructure/persistence/relational/repositories/humanization-job.repository';
@@ -9,7 +9,8 @@ import { InjectQueue } from '@nestjs/bull';
 import { HUMANIZATION_JOBS_QUEUE } from './queue';
 import { Queue } from 'bull';
 import { v4 as uuidv4 } from 'uuid';
-import { HumanizationJobStatus } from './domain/humanization-job';
+import { HumanizationJob, HumanizationJobStatus } from './domain/humanization-job';
+import { HumanizationJobEntity } from './infrastructure/persistence/relational/entities/humanization-job.entity';
 
 const HUMANIZATION_CREDIT_COST = 1;
 
@@ -22,42 +23,75 @@ export class HumanizationJobsService {
     @InjectQueue(HUMANIZATION_JOBS_QUEUE) private readonly queue: Queue,
   ) {}
 
+  private readonly logger = new Logger(HumanizationJobsService.name);
+  // High level createJob orchestrates smaller helper methods for readability.
   async createJob(dto: CreateHumanizationJobDto): Promise<HumanizationJobDto> {
-    // 1. Check credits
-    const hasCredits = await this.creditsService.hasSufficientCredits(
-      dto.userId,
-      HUMANIZATION_CREDIT_COST,
-    );
-    if (!hasCredits) throw new BadRequestException('Insufficient credits');
-    await this.creditsService.deductCredits(
-      dto.userId,
-      HUMANIZATION_CREDIT_COST,
-    );
+    await this.checkAndDeductCredits(dto.userId);
 
-    // 2. Create job record
     const jobId = uuidv4();
     const inputFileId = await this.filesService.uploadTextFile(
       `jobs/${jobId}/input.txt`,
       dto.inputText,
     );
-    const jobEntity = await this.jobRepo.create({
+
+    const job = await this.persistJobRecord({
       id: jobId,
       userId: dto.userId,
       inputFileUrl: inputFileId,
+      readability: dto.readability,
+      tone: dto.tone,
+    });
+
+    await this.enqueueOrRollback(jobId, dto.userId, dto.readability, dto.tone);
+
+    return this.toDto(job);
+  }
+
+  private async checkAndDeductCredits(userId: string): Promise<void> {
+    const hasCredits = await this.creditsService.hasSufficientCredits(
+      userId,
+      HUMANIZATION_CREDIT_COST,
+    );
+    if (!hasCredits) throw new BadRequestException('Insufficient credits');
+    await this.creditsService.deductCredits(userId, HUMANIZATION_CREDIT_COST);
+  }
+
+  private async persistJobRecord(partial: Partial<HumanizationJobEntity>) {
+    const entity = await this.jobRepo.create({
+      ...partial,
       status: HumanizationJobStatus.PENDING,
-      readability: dto.readability,
-      tone: dto.tone,
     });
-    const job = HumanizationJobMapper.toDomain(jobEntity);
+    return HumanizationJobMapper.toDomain(entity);
+  }
 
-    // 3. Enqueue job
-    await this.queue.add('process', {
-      jobId,
-      readability: dto.readability,
-      tone: dto.tone,
-    });
+  private async enqueueOrRollback(jobId: string, userId: string, readability?: string, tone?: string) {
+    try {
+      const queued = await this.queue.add('process', { jobId, readability, tone });
+      this.logger.log(`Enqueued job ${jobId} (id=${queued.id})`);
+    } catch (err) {
+      this.logger.error(`Failed enqueuing job ${jobId}`, err as any);
+      await this.handleEnqueueFailure(jobId, userId);
+    }
+  }
 
-    // 4. Return DTO
+  private async handleEnqueueFailure(jobId: string, userId: string) {
+    try {
+      await this.jobRepo.update(jobId, { status: HumanizationJobStatus.FAILED });
+    } catch (uerr) {
+      this.logger.warn(`Failed to update job status to FAILED for ${jobId}`, uerr as any);
+    }
+
+    try {
+      await this.creditsService.addCredits(userId, HUMANIZATION_CREDIT_COST);
+      this.logger.log(`Refunded ${HUMANIZATION_CREDIT_COST} credits to user ${userId} after enqueue failure`);
+    } catch (cerr) {
+      this.logger.warn(`Failed to refund credits to user ${userId}`, cerr as any);
+    }
+
+    throw new InternalServerErrorException('Failed to enqueue job, please try again later');
+  }
+
+  private toDto(job: HumanizationJob): HumanizationJobDto {
     return {
       id: job.id,
       userId: job.userId,
