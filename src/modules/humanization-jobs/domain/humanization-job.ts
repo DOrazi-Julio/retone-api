@@ -1,4 +1,9 @@
-export type HumanizationJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export enum HumanizationJobStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
 
 export class HumanizationJob {
   constructor(
@@ -7,7 +12,7 @@ export class HumanizationJob {
     public inputFileUrl?: string,
     public outputFileUrl?: string,
     public tokensUsed?: number,
-    public status: HumanizationJobStatus = 'pending',
+    public status: HumanizationJobStatus = HumanizationJobStatus.PENDING,
     public createdAt?: Date,
     public updatedAt?: Date,
     public readability?: string,

@@ -9,6 +9,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { HUMANIZATION_JOBS_QUEUE } from './queue';
 import { Queue } from 'bull';
 import { v4 as uuidv4 } from 'uuid';
+import { HumanizationJobStatus } from './domain/humanization-job';
 
 const HUMANIZATION_CREDIT_COST = 1;
 
@@ -43,7 +44,7 @@ export class HumanizationJobsService {
       id: jobId,
       userId: dto.userId,
       inputFileUrl: inputFileId,
-      status: 'pending',
+      status: HumanizationJobStatus.PENDING,
       readability: dto.readability,
       tone: dto.tone,
     });

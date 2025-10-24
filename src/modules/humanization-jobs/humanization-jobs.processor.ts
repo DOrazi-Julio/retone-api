@@ -5,6 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HumanizationJobRepository } from './infrastructure/persistence/relational/repositories/humanization-job.repository';
 import { FilesService } from '../../files/files.service';
 import { OpenAI } from 'openai';
+import { HumanizationJobStatus } from './domain/humanization-job';
 
 @Injectable()
 @Processor(HUMANIZATION_JOBS_QUEUE)
@@ -30,8 +31,8 @@ export class HumanizationJobsProcessor {
     }
 
     try {
-      await this.jobRepo.update(jobId, { status: 'processing' });
-      this.logger.log(`Job ${jobId} marked as processing`);
+  await this.jobRepo.update(jobId, { status: HumanizationJobStatus.PROCESSING });
+  this.logger.log(`Job ${jobId} marked as ${HumanizationJobStatus.PROCESSING}`);
 
       // Download input text
       const inputText = await this.filesService.downloadFileAsText(
@@ -46,7 +47,7 @@ export class HumanizationJobsProcessor {
       if (tone) systemPrompt += ` Use a ${tone} tone.`;
 
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: process.env.LLM_MODEL || 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: inputText },
@@ -66,14 +67,14 @@ export class HumanizationJobsProcessor {
 
       // Update job
       await this.jobRepo.update(jobId, {
-        status: 'completed',
+        status: HumanizationJobStatus.COMPLETED,
         outputFileUrl,
         tokensUsed,
       });
       this.logger.log(`Job ${jobId} completed successfully`);
     } catch (err) {
-      await this.jobRepo.update(jobId, { status: 'failed' });
-      this.logger.error(`Job ${jobId} failed`, err as any);
+  await this.jobRepo.update(jobId, { status: HumanizationJobStatus.FAILED });
+  this.logger.error(`Job ${jobId} failed`, err as any);
     }
   }
 }
