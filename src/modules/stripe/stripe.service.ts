@@ -238,7 +238,7 @@ export class StripeService {
             // Find user and save payment method
             // Use StripeCustomerService to persist the payment method in our DB
             try {
-              const user = await this.customerService.getUserById(customerId);
+              const user = await this.customerService.getUserByStripeCustomerId(customerId);
               this.logger.log(`Payment method attached: ${paymentMethod.id} for customer: ${customerId}`);
 
               if (user) {

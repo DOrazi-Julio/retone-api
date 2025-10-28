@@ -156,4 +156,11 @@ export class StripeCustomerService {
   public async getUserById(userId: string) {
     return await this.userRepository.findOne({ where: { id: userId } });
   }
+
+  /**
+   * Get user by Stripe customer id
+   */
+  public async getUserByStripeCustomerId(customerId: string) {
+    return await this.userRepository.findOne({ where: { stripeCustomerId: customerId } });
+  }
 }
