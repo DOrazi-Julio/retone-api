@@ -8,6 +8,9 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { STRIPE_PLANS } from '../config/stripe.plans.config';
 import { PlanEntity } from '../entities/plan.entity';
 
+// Module-scoped DataSource so cleanup code can always reference it
+let moduleDataSource: DataSource | undefined;
+
 // Colors for console output
 const colors = {
   reset: '\x1b[0m',
@@ -50,46 +53,7 @@ function logInfo(message: string): void {
   log(`ℹ️  ${message}`, 'blue');
 }
 
-// Database configuration
-const dataSource = new DataSource({
-  type: process.env.DATABASE_TYPE,
-  url: process.env.DATABASE_URL,
-  host: process.env.DATABASE_HOST,
-  port: process.env.DATABASE_PORT
-    ? parseInt(process.env.DATABASE_PORT, 10)
-    : 5432,
-  username: process.env.DATABASE_USERNAME,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
-  synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
-  dropSchema: false,
-  keepConnectionAlive: true,
-  logging: process.env.NODE_ENV !== 'production',
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
-  cli: {
-    entitiesDir: 'src',
 
-    subscribersDir: 'subscriber',
-  },
-  extra: {
-    // based on https://node-postgres.com/api/pool
-    // max connection pool size
-    max: process.env.DATABASE_MAX_CONNECTIONS
-      ? parseInt(process.env.DATABASE_MAX_CONNECTIONS, 10)
-      : 100,
-    ssl:
-      process.env.DATABASE_SSL_ENABLED === 'true'
-        ? {
-            rejectUnauthorized:
-              process.env.DATABASE_REJECT_UNAUTHORIZED === 'true',
-            ca: process.env.DATABASE_CA ?? undefined,
-            key: process.env.DATABASE_KEY ?? undefined,
-            cert: process.env.DATABASE_CERT ?? undefined,
-          }
-        : undefined,
-  },
-} as DataSourceOptions);
 
 async function setupStripe(): Promise<void> {
   try {
@@ -105,14 +69,7 @@ async function setupStripe(): Promise<void> {
       logWarning('.env file not found, using process environment variables');
     }
 
-    // Log database connection values
-    logInfo('Database connection config:');
-    log(`  host: ${process.env.DATABASE_HOST}`, 'blue');
-    log(`  port: ${process.env.DATABASE_PORT}`, 'blue');
-    log(`  username: ${process.env.DATABASE_USERNAME}`, 'blue');
-    log(`  password: ${process.env.DATABASE_PASSWORD}`, 'blue');
-    log(`  database: ${process.env.DATABASE_NAME}`, 'blue');
-    log(`  ssl: ${process.env.DATABASE_SSL_ENABLED}`, 'blue');
+
 
     // Validate required environment variables
     const requiredVars = [
@@ -140,7 +97,7 @@ async function setupStripe(): Promise<void> {
 
     logSuccess('Stripe client initialized');
 
-    // Validate API connection
+  // Validate API connection
     try {
       await stripe.accounts.retrieve();
       logSuccess('Stripe API connection validated');
@@ -153,7 +110,42 @@ async function setupStripe(): Promise<void> {
     // Initialize database connection
     logInfo('Connecting to database...');
     try {
-      await dataSource.initialize();
+      moduleDataSource = new DataSource({
+        type: (process.env.DATABASE_TYPE as any) || 'postgres',
+        url: process.env.DATABASE_URL,
+        host: process.env.DATABASE_HOST,
+        port: process.env.DATABASE_PORT
+          ? parseInt(process.env.DATABASE_PORT, 10)
+          : 5432,
+        username: process.env.DATABASE_USERNAME,
+        password: process.env.DATABASE_PASSWORD,
+        database: process.env.DATABASE_NAME,
+        synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+  dropSchema: false,
+        logging: process.env.NODE_ENV !== 'production',
+        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+        migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
+        cli: {
+          entitiesDir: 'src',
+          subscribersDir: 'subscriber',
+        },
+        extra: {
+          max: process.env.DATABASE_MAX_CONNECTIONS
+            ? parseInt(process.env.DATABASE_MAX_CONNECTIONS, 10)
+            : 100,
+          ssl:
+            process.env.DATABASE_SSL_ENABLED === 'true'
+              ? {
+                  rejectUnauthorized:
+                    process.env.DATABASE_REJECT_UNAUTHORIZED === 'true',
+                  ca: process.env.DATABASE_CA ?? undefined,
+                  key: process.env.DATABASE_KEY ?? undefined,
+                  cert: process.env.DATABASE_CERT ?? undefined,
+                }
+              : undefined,
+        },
+  } as any);
+      await moduleDataSource.initialize();
       logSuccess('Connected to database successfully');
     } catch (error) {
       logError('Failed to connect to database');
@@ -161,7 +153,7 @@ async function setupStripe(): Promise<void> {
       process.exit(1);
     }
 
-    const planRepository = dataSource.getRepository(PlanEntity);
+    const planRepository = moduleDataSource.getRepository(PlanEntity);
 
     logSection('Processing Stripe Plans');
 
@@ -194,7 +186,7 @@ async function setupStripe(): Promise<void> {
           logSuccess(`  Created product "${plan.name}" (${product.id})`);
         }
 
-        // Check if there are existing prices for this product
+            // ...existing code...
         const existingPrice = await findPriceForProduct(stripe, product.id, plan.amount, plan.currency, plan.interval);
         
         let price: Stripe.Price;
@@ -454,19 +446,19 @@ async function setupStripe(): Promise<void> {
     log('\n🎉 Stripe setup completed successfully!', 'green');
 
     // Close database connection
-    await dataSource.destroy();
+    if (moduleDataSource && moduleDataSource.isInitialized) {
+      await moduleDataSource.destroy();
+    }
 
   } catch (error) {
     logError(`Setup failed: ${error.message}`);
     if (error.stack) {
       console.error(error.stack);
     }
-    
     // Make sure to close database connection even on error
-    if (dataSource.isInitialized) {
-      await dataSource.destroy();
+    if (moduleDataSource && moduleDataSource.isInitialized) {
+      await moduleDataSource.destroy();
     }
-    
     process.exit(1);
   }
 }
@@ -492,30 +484,25 @@ async function findPriceForProduct(
       product: productId, 
       active: true 
     });
-    
     return prices.data.find(price => {
       // Check basic price properties
       const basicMatch = price.unit_amount === unitAmount && price.currency === currency;
-      
-      // For subscription prices, also check the interval
       if (interval) {
         return basicMatch && price.recurring?.interval === interval;
       }
-      
       // For one-time prices, ensure it's not a recurring price
       return basicMatch && !price.recurring;
     }) || null;
-  } catch (error) {
-    throw new Error(`Failed to search for price for product "${productId}": ${error.message}`);
+  } catch (err) {
+    throw new Error(`Failed to search for price for product "${productId}": ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
 // Check if this script is being run directly
+
 if (require.main === module) {
   setupStripe().catch(error => {
-    logError(`Fatal error: ${error.message}`);
+    logError(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   });
 }
-
-export { setupStripe };
