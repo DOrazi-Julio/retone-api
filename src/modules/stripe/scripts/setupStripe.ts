@@ -123,7 +123,8 @@ async function setupStripe(): Promise<void> {
         synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
   dropSchema: false,
         logging: process.env.NODE_ENV !== 'production',
-        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  // Use project root so all entities across the repo are picked up
+  entities: [`${process.cwd()}/src/**/*.entity{.ts,.js}`],
         migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
         cli: {
           entitiesDir: 'src',
@@ -147,6 +148,13 @@ async function setupStripe(): Promise<void> {
   } as any);
       await moduleDataSource.initialize();
       logSuccess('Connected to database successfully');
+      // Log loaded entities to help debug missing metadata issues
+      try {
+        const loaded = moduleDataSource.entityMetadatas.map(m => m.name).sort();
+        logInfo(`Loaded entities (${loaded.length}): ${loaded.join(', ')}`);
+      } catch (e) {
+        // non-fatal
+      }
     } catch (error) {
       logError('Failed to connect to database');
       logError(`Error: ${error.message}`);
