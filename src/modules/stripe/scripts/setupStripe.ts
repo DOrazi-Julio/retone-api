@@ -123,7 +123,7 @@ async function setupStripe(): Promise<void> {
         synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
   dropSchema: false,
         logging: process.env.NODE_ENV !== 'production',
-  // Use project root so all entities across the repo are picked up
+
   entities: [`${process.cwd()}/src/**/*.entity{.ts,.js}`],
         migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
         cli: {
