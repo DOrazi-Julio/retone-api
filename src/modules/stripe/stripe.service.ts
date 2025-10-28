@@ -236,8 +236,29 @@ export class StripeService {
               : paymentMethod.customer.id;
             
             // Find user and save payment method
-            // This could be moved to customer service if needed
-            this.logger.log(`Payment method attached: ${paymentMethod.id} for customer: ${customerId}`);
+            // Use StripeCustomerService to persist the payment method in our DB
+            try {
+              const user = await this.customerService.getUserById(customerId);
+              this.logger.log(`Payment method attached: ${paymentMethod.id} for customer: ${customerId}`);
+
+              if (user) {
+                const card = paymentMethod.card;
+                await this.customerService.savePaymentMethod(
+                  user.id.toString(),
+                  paymentMethod.id,
+                  paymentMethod.type,
+                  card?.last4,
+                  card?.brand,
+                  card?.exp_month,
+                  card?.exp_year,
+                );
+                this.logger.log(`Payment method persisted for user ${user.id}`);
+              } else {
+                this.logger.warn(`No local user found for Stripe customer ${customerId} — skipping persistence`);
+              }
+            } catch (err) {
+              this.logger.error(`Failed to persist payment method ${paymentMethod.id} for customer ${customerId}`, err);
+            }
           }
           break;
 
