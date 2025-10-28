@@ -66,6 +66,7 @@ async function setupStripe(): Promise<void> {
   try {
     logSection('Stripe Setup Initialization');
 
+
     // Load environment variables
     const envPath = path.join(process.cwd(), '.env');
     if (fs.existsSync(envPath)) {
@@ -74,6 +75,15 @@ async function setupStripe(): Promise<void> {
     } else {
       logWarning('.env file not found, using process environment variables');
     }
+
+    // Log database connection values
+    logInfo('Database connection config:');
+    log(`  host: ${process.env.DATABASE_HOST}`, 'blue');
+    log(`  port: ${process.env.DATABASE_PORT}`, 'blue');
+    log(`  username: ${process.env.DATABASE_USERNAME}`, 'blue');
+    log(`  password: ${process.env.DATABASE_PASSWORD}`, 'blue');
+    log(`  database: ${process.env.DATABASE_NAME}`, 'blue');
+    log(`  ssl: ${process.env.DATABASE_SSL_ENABLED}`, 'blue');
 
     // Validate required environment variables
     const requiredVars = [
