@@ -54,12 +54,26 @@ function logInfo(message: string): void {
 const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.DATABASE_HOST || 'localhost',
-  port: parseInt(process.env.DATABASE_PORT || '5432'),
+  port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT, 10) : 5432,
   username: process.env.DATABASE_USERNAME || 'root',
   password: process.env.DATABASE_PASSWORD || 'secret',
   database: process.env.DATABASE_NAME || 'api',
+  synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+  dropSchema: false,
+  logging: process.env.NODE_ENV !== 'production',
   entities: [PlanEntity],
-  synchronize: false,
+  extra: {
+    max: process.env.DATABASE_MAX_CONNECTIONS ? parseInt(process.env.DATABASE_MAX_CONNECTIONS, 10) : 100,
+    ssl:
+      process.env.DATABASE_SSL_ENABLED === 'true'
+        ? {
+            rejectUnauthorized: process.env.DATABASE_REJECT_UNAUTHORIZED === 'true',
+            ca: process.env.DATABASE_CA ?? undefined,
+            key: process.env.DATABASE_KEY ?? undefined,
+            cert: process.env.DATABASE_CERT ?? undefined,
+          }
+        : undefined,
+  },
 });
 
 async function setupStripe(): Promise<void> {
