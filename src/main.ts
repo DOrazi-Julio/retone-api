@@ -4,6 +4,7 @@ import {
   ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
+import * as bodyParser from 'body-parser';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -18,18 +19,9 @@ async function bootstrap() {
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
   const configService = app.get(ConfigService<AllConfigType>);
 
-  // Configure raw body parsing for Stripe webhooks
-  app.use('/api/v1/stripe/webhook', (req, res, next) => {
-    let data = '';
-    req.setEncoding('utf8');
-    req.on('data', (chunk) => {
-      data += chunk;
-    });
-    req.on('end', () => {
-      req.body = Buffer.from(data, 'utf8');
-      next();
-    });
-  });
+  // Configure raw body parsing for Stripe webhooks (preserve exact bytes)
+  // Use body-parser.raw so Stripe signature verification receives the original raw Buffer
+  app.use('/api/v1/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
 
   app.enableShutdownHooks();
   app.setGlobalPrefix(
