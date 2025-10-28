@@ -297,4 +297,24 @@ export class StripeService {
       throw error;
     }
   }
+
+  async createSetupIntentForUser(userId: string): Promise<Stripe.SetupIntent> {
+    if (!this.isConfigured()) {
+      throw new Error('Stripe is not configured');
+    }
+    // Find user and get Stripe customerId
+    const user = await this.customerService.getUserById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    if (!user.stripeCustomerId) {
+      // Create Stripe customer if not exists
+      user.stripeCustomerId = await this.customerService.createCustomerForUser(this.stripe, user);
+    }
+    // Create SetupIntent for this customer
+    return await this.stripe.setupIntents.create({
+      customer: user.stripeCustomerId,
+      usage: 'off_session',
+    });
+  }
 }

@@ -8,8 +8,11 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 import { StripeService } from './stripe.service';
 import { CreatePaymentSessionData, CreateSubscriptionSessionData } from './services';
 
@@ -295,6 +298,27 @@ export class StripeController {
         'Failed to retrieve payment methods',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  @Post('payment-method-intent')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Create a Stripe SetupIntent for adding a payment method for the authenticated user' })
+  @ApiResponse({ status: 201, description: 'SetupIntent created successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 503, description: 'Service unavailable - Stripe not configured' })
+  async createPaymentMethodIntent(@Request() req) {
+    try {
+      if (!this.stripeService.isConfigured()) {
+        throw new HttpException('Payment service is not available', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      const userId = req.user.id;
+      const intent = await this.stripeService.createSetupIntentForUser(userId);
+      return { clientSecret: intent.client_secret };
+    } catch (error) {
+      this.logger.error(`Failed to create SetupIntent for user`, error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException('Failed to create SetupIntent', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

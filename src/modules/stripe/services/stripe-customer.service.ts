@@ -149,4 +149,11 @@ export class StripeCustomerService {
       throw error;
     }
   }
+
+  /**
+   * Get user by ID
+   */
+  public async getUserById(userId: string) {
+    return await this.userRepository.findOne({ where: { id: userId } });
+  }
 }
