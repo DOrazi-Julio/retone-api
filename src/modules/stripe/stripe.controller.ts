@@ -11,7 +11,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { StripeService } from './stripe.service';
 import { CreatePaymentSessionData, CreateSubscriptionSessionData } from './services';
@@ -40,6 +40,7 @@ class CreatePortalSessionDto {
 }
 
 @ApiTags('stripe')
+@ApiBearerAuth()
 @Controller('stripe')
 export class StripeController {
   private readonly logger = new Logger(StripeController.name);
