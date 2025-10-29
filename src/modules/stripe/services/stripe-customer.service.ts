@@ -152,27 +152,17 @@ export class StripeCustomerService {
         // Unset any existing default payment methods for this user
         await repo.update({ userId, isDefault: true }, { isDefault: false });
 
-        // Find the payment method by stripe id
-        let pm: PaymentMethodEntity | null = await repo.findOne({ where: { stripePaymentMethodId } });
+        // Find the payment method by stripe id — do not create here.
+        const pm: PaymentMethodEntity | null = await repo.findOne({ where: { stripePaymentMethodId } });
 
         if (!pm) {
-          // If it doesn't exist yet (edge case), insert and then re-query
-          const toInsert: Partial<PaymentMethodEntity> = {
-            userId,
-            stripePaymentMethodId,
-            isDefault: true,
-          };
-          await repo.insert(toInsert as any);
-          pm = await repo.findOne({ where: { stripePaymentMethodId } });
-          if (!pm) {
-            throw new Error('Failed to create payment method record');
-          }
-        } else {
-          pm.isDefault = true;
-          pm = await repo.save(pm as any);
+          // For manual set-default requests we expect the payment method to already exist.
+          throw new Error('Payment method not found');
         }
 
-        return pm as PaymentMethodEntity;
+        pm.isDefault = true;
+        const savedPm = await repo.save(pm as any);
+        return savedPm as PaymentMethodEntity;
       });
 
       // If Stripe client and customerId provided, update invoice settings on Stripe side
