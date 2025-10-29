@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   Param,
   Query,
@@ -342,6 +343,41 @@ export class StripeController {
       this.logger.error(`Failed to set default payment method ${paymentMethodId}`, error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Failed to set default payment method', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Delete('user/payment-methods/:paymentMethodId')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Delete a user payment method if it is not the default' })
+  @ApiResponse({ status: 200, description: 'Payment method deleted' })
+  @ApiResponse({ status: 400, description: 'Cannot delete default payment method or invalid request' })
+  @ApiResponse({ status: 404, description: 'Payment method not found' })
+  async deletePaymentMethod(@Request() req, @Param('paymentMethodId') paymentMethodId: string) {
+    try {
+      if (!this.stripeService.isConfigured()) {
+        throw new HttpException('Payment service is not available', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+
+      const userId = req.user.id;
+
+      try {
+        await this.stripeService.deletePaymentMethod(userId, paymentMethodId);
+      } catch (err: any) {
+        const msg = err?.message || 'Failed to delete payment method';
+        if (msg.includes('not found')) {
+          throw new HttpException(msg, HttpStatus.NOT_FOUND);
+        }
+        if (msg.includes('Cannot delete default')) {
+          throw new HttpException(msg, HttpStatus.BAD_REQUEST);
+        }
+        throw err;
+      }
+
+      return { success: true, message: 'Payment method deleted' };
+    } catch (error) {
+      this.logger.error(`Failed to delete payment method ${paymentMethodId}`, error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException('Failed to delete payment method', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

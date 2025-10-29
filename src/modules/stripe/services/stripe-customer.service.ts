@@ -199,6 +199,47 @@ export class StripeCustomerService {
   }
 
   /**
+   * Delete a payment method for a user if it's not the default.
+   * Will attempt to detach from Stripe (if client and customerId provided) and remove DB record.
+   */
+  async deletePaymentMethod(
+    userId: string,
+    stripePaymentMethodId: string,
+    stripe?: Stripe,
+    customerId?: string,
+  ): Promise<void> {
+    try {
+      const repo = this.paymentMethodRepository;
+
+      const pm = await repo.findOne({ where: { userId, stripePaymentMethodId } });
+      if (!pm) {
+        throw new Error('Payment method not found');
+      }
+
+      if (pm.isDefault) {
+        throw new Error('Cannot delete default payment method');
+      }
+
+      // Attempt to detach from Stripe if possible
+      if (stripe) {
+        try {
+          // Detach the PaymentMethod from customer
+          await stripe.paymentMethods.detach(stripePaymentMethodId);
+        } catch (err) {
+          // Log but don't block deletion — detachment failing shouldn't leave DB inconsistent
+          this.logger.error(`Failed to detach payment method ${stripePaymentMethodId} from Stripe`, err);
+        }
+      }
+
+      await repo.delete({ id: pm.id });
+      this.logger.log(`Deleted payment method ${stripePaymentMethodId} for user ${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete payment method ${stripePaymentMethodId} for user ${userId}`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get user's payment methods
    */
   async getUserPaymentMethods(userId: string): Promise<PaymentMethodEntity[]> {

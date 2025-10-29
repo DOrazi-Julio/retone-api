@@ -333,6 +333,29 @@ export class StripeService {
   }
 
   /**
+   * Delete a user's payment method if it's not the default
+   */
+  async deletePaymentMethod(userId: string, stripePaymentMethodId: string) {
+    if (!this.isConfigured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    const user = await this.customerService.getUserById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const customerId = user.stripeCustomerId || undefined;
+
+    return this.customerService.deletePaymentMethod(
+      userId,
+      stripePaymentMethodId,
+      this.stripe,
+      customerId,
+    );
+  }
+
+  /**
    * Handle payment_method.attached webhook event in a single place
    */
   private async handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod): Promise<void> {
