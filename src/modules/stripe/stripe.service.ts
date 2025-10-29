@@ -229,37 +229,7 @@ export class StripeService {
           break;
 
         case 'payment_method.attached':
-          const paymentMethod = event.data.object as Stripe.PaymentMethod;
-          if (paymentMethod.customer && paymentMethod.card) {
-            const customerId = typeof paymentMethod.customer === 'string' 
-              ? paymentMethod.customer 
-              : paymentMethod.customer.id;
-            
-            // Find user and save payment method
-            // Use StripeCustomerService to persist the payment method in our DB
-            try {
-              const user = await this.customerService.getUserByStripeCustomerId(customerId);
-              this.logger.log(`Payment method attached: ${paymentMethod.id} for customer: ${customerId}`);
-
-              if (user) {
-                const card = paymentMethod.card;
-                await this.customerService.savePaymentMethod(
-                  user.id.toString(),
-                  paymentMethod.id,
-                  paymentMethod.type,
-                  card?.last4,
-                  card?.brand,
-                  card?.exp_month,
-                  card?.exp_year,
-                );
-                this.logger.log(`Payment method persisted for user ${user.id}`);
-              } else {
-                this.logger.warn(`No local user found for Stripe customer ${customerId} — skipping persistence`);
-              }
-            } catch (err) {
-              this.logger.error(`Failed to persist payment method ${paymentMethod.id} for customer ${customerId}`, err);
-            }
-          }
+          await this.handlePaymentMethodAttached(event.data.object as Stripe.PaymentMethod);
           break;
 
         case 'customer.subscription.created':
@@ -337,5 +307,77 @@ export class StripeService {
       customer: user.stripeCustomerId,
       usage: 'off_session',
     });
+  }
+
+  /**
+   * Set default payment method for a user in DB and Stripe
+   */
+  async setDefaultPaymentMethod(userId: string, stripePaymentMethodId: string) {
+    if (!this.isConfigured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    const user = await this.customerService.getUserById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const customerId = user.stripeCustomerId || undefined;
+
+    return this.customerService.setDefaultPaymentMethod(
+      userId,
+      stripePaymentMethodId,
+      this.stripe,
+      customerId,
+    );
+  }
+
+  /**
+   * Handle payment_method.attached webhook event in a single place
+   */
+  private async handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod): Promise<void> {
+    try {
+      if (!paymentMethod.customer || !paymentMethod.card) return;
+
+      const customerId = typeof paymentMethod.customer === 'string'
+        ? paymentMethod.customer
+        : paymentMethod.customer.id;
+
+      this.logger.log(`Payment method attached: ${paymentMethod.id} for customer: ${customerId}`);
+
+      const user = await this.customerService.getUserByStripeCustomerId(customerId);
+
+      if (!user) {
+        this.logger.warn(`No local user found for Stripe customer ${customerId} — skipping persistence`);
+        return;
+      }
+
+      const card = paymentMethod.card;
+      await this.customerService.savePaymentMethod(
+        user.id.toString(),
+        paymentMethod.id,
+        paymentMethod.type,
+        card?.last4,
+        card?.brand,
+        card?.exp_month,
+        card?.exp_year,
+      );
+
+      try {
+        await this.customerService.setDefaultPaymentMethod(
+          user.id.toString(),
+          paymentMethod.id,
+          this.stripe,
+          customerId,
+        );
+        this.logger.log(`Payment method ${paymentMethod.id} set as default for user ${user.id}`);
+      } catch (err) {
+        this.logger.error(`Failed to set default payment method ${paymentMethod.id} for user ${user.id}`, err);
+      }
+
+      this.logger.log(`Payment method persisted for user ${user.id}`);
+    } catch (err) {
+      this.logger.error(`Failed to process attached payment method ${(paymentMethod as any)?.id}`, err);
+    }
   }
 }

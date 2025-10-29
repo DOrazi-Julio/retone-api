@@ -136,6 +136,69 @@ export class StripeCustomerService {
   }
 
   /**
+   * Mark a payment method as default for a user (DB) and optionally update Stripe customer invoice settings
+   */
+  async setDefaultPaymentMethod(
+    userId: string,
+    stripePaymentMethodId: string,
+    stripe?: Stripe,
+    customerId?: string,
+  ): Promise<PaymentMethodEntity> {
+    try {
+      // Run DB changes in a transaction: unset previous default(s) and set the provided one
+      const result = await this.paymentMethodRepository.manager.transaction(async (manager) => {
+        const repo = manager.getRepository(PaymentMethodEntity);
+
+        // Unset any existing default payment methods for this user
+        await repo.update({ userId, isDefault: true }, { isDefault: false });
+
+        // Find the payment method by stripe id
+        let pm: PaymentMethodEntity | null = await repo.findOne({ where: { stripePaymentMethodId } });
+
+        if (!pm) {
+          // If it doesn't exist yet (edge case), insert and then re-query
+          const toInsert: Partial<PaymentMethodEntity> = {
+            userId,
+            stripePaymentMethodId,
+            isDefault: true,
+          };
+          await repo.insert(toInsert as any);
+          pm = await repo.findOne({ where: { stripePaymentMethodId } });
+          if (!pm) {
+            throw new Error('Failed to create payment method record');
+          }
+        } else {
+          pm.isDefault = true;
+          pm = await repo.save(pm as any);
+        }
+
+        return pm as PaymentMethodEntity;
+      });
+
+      // If Stripe client and customerId provided, update invoice settings on Stripe side
+      if (stripe && customerId) {
+        try {
+          await stripe.customers.update(customerId, {
+            invoice_settings: { default_payment_method: stripePaymentMethodId },
+          });
+          this.logger.log(`Stripe customer ${customerId} default payment method set to ${stripePaymentMethodId}`);
+        } catch (err) {
+          // Log but don't fail the overall operation — DB change already applied
+          this.logger.error(
+            `Failed to update Stripe customer ${customerId} default payment method to ${stripePaymentMethodId}`,
+            err,
+          );
+        }
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to set default payment method for user ${userId}`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get user's payment methods
    */
   async getUserPaymentMethods(userId: string): Promise<PaymentMethodEntity[]> {

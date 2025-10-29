@@ -322,6 +322,29 @@ export class StripeController {
     }
   }
 
+  @Post('user/payment-methods/:paymentMethodId/default')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Set a user payment method as default (DB + Stripe)' })
+  @ApiResponse({ status: 200, description: 'Payment method set as default' })
+  @ApiResponse({ status: 404, description: 'User or payment method not found' })
+  @ApiResponse({ status: 503, description: 'Service unavailable - Stripe not configured' })
+  async setDefaultPaymentMethod(@Request() req, @Param('paymentMethodId') paymentMethodId: string) {
+    try {
+      if (!this.stripeService.isConfigured()) {
+        throw new HttpException('Payment service is not available', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+
+      const userId = req.user.id;
+      await this.stripeService.setDefaultPaymentMethod(userId, paymentMethodId);
+
+      return { success: true, message: 'Default payment method updated' };
+    } catch (error) {
+      this.logger.error(`Failed to set default payment method ${paymentMethodId}`, error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException('Failed to set default payment method', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @Get('user/:userId/transactions')
   @ApiOperation({ summary: 'Get user transaction history' })
   @ApiResponse({
