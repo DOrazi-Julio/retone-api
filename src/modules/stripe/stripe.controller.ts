@@ -368,8 +368,15 @@ export class StripeController {
 
       const userId = req.user.id;
 
+      // Resolve provided id (could be local DB id or Stripe payment method id)
+      const paymentMethods = await this.stripeService.getUserPaymentMethods(userId);
+      const target = paymentMethods.find(pm => pm.id === paymentMethodId || pm.stripePaymentMethodId === paymentMethodId);
+      if (!target) {
+        throw new HttpException('Payment method not found', HttpStatus.NOT_FOUND);
+      }
+
       try {
-        await this.stripeService.deletePaymentMethod(userId, paymentMethodId);
+        await this.stripeService.deletePaymentMethod(userId, target.stripePaymentMethodId);
       } catch (err: any) {
         const msg = err?.message || 'Failed to delete payment method';
         if (msg.includes('not found')) {
