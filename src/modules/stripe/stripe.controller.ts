@@ -336,7 +336,15 @@ export class StripeController {
       }
 
       const userId = req.user.id;
-      await this.stripeService.setDefaultPaymentMethod(userId, paymentMethodId);
+      // The incoming paymentMethodId can be either the local DB id (UUID) or the Stripe payment method id.
+      // Resolve to the Stripe payment method id from the user's stored methods.
+      const paymentMethods = await this.stripeService.getUserPaymentMethods(userId);
+      const target = paymentMethods.find(pm => pm.id === paymentMethodId || pm.stripePaymentMethodId === paymentMethodId);
+      if (!target) {
+        throw new HttpException('Payment method not found', HttpStatus.NOT_FOUND);
+      }
+
+      await this.stripeService.setDefaultPaymentMethod(userId, target.stripePaymentMethodId);
 
       return { success: true, message: 'Default payment method updated' };
     } catch (error) {
