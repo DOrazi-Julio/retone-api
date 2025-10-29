@@ -249,6 +249,7 @@ export class StripeController {
   }
 
   @Get('user/:userId/payment-methods')
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get user payment methods' })
   @ApiResponse({
     status: 200,
@@ -270,8 +271,6 @@ export class StripeController {
           HttpStatus.SERVICE_UNAVAILABLE,
         );
       }
-
-      // Now userId is a string (UUID), so we can use it directly
       const paymentMethods = await this.stripeService.getUserPaymentMethods(userId);
       
       return {
@@ -359,7 +358,11 @@ export class StripeController {
     status: 503,
     description: 'Service unavailable - Stripe not configured',
   })
+  @Get('user/:userId/transactions')
+  @UseGuards(AuthGuard('jwt'))
+
   async getUserTransactions(
+    @Request() req,
     @Param('userId') userId: string,
     @Query('limit') limit?: string,
   ) {
@@ -369,6 +372,15 @@ export class StripeController {
           'Payment service is not available',
           HttpStatus.SERVICE_UNAVAILABLE,
         );
+      }
+
+      // Ensure the authenticated user can only access their own transactions
+      const authUserId = req.user?.id;
+      if (!authUserId) {
+        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      }
+      if (authUserId !== userId) {
+        throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
       }
 
       const userIdNumber = parseInt(userId, 10);
